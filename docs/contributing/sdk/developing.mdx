@@ -13,12 +13,16 @@ Once, you've done that, create a new branch:
 git checkout -b MY_BRANCH_NAME
 ```
 
+<Accordion title="Rusty" defaultOpen={false}>
+  Mintlify DOCS
+</Accordion>
+
 ## Set up environment variables
 
 Start by creating a .env file at the root of the Infisical directory then copy the contents of the file below into the .env file.
 
 <Accordion title=".env file content">
-  ```env 
+  ```env
     # This is required for running tests locally.
     # Rename this file to ".env" and fill in the values below.
 
@@ -34,77 +38,82 @@ Start by creating a .env file at the root of the Infisical directory then copy t
     # The Infisical site URL. If you are testing with a local Infisical instance, then this should be set to "http://localhost:8080".
     INFISICAL_SITE_URL=https://app.infisical.com
 
-````
+  ```
 </Accordion>
 
 <Warning>
   The above values are required for running tests locally. Before opening a pull request, make sure to run `cargo test` to ensure that all tests pass.
 </Warning>
 
-
 ## Guidelines
 
 ### Predictable and consistent
-When adding new functionality (such as new functions), it's very important that the functionality is added to _all_ the SDK's. This is to ensure that the SDK's are predictable and consistent across all languages. If you are adding new functionality, please make sure to add it to all the SDK's.
+
+When adding new functionality (such as new functions), it's very important that the functionality is added to *all* the SDK's. This is to ensure that the SDK's are predictable and consistent across all languages. If you are adding new functionality, please make sure to add it to all the SDK's.
 
 ### Handling errors
+
 Error handling is very important when writing SDK's. We want to make sure that the SDK's are easy to use, and that the user gets a good understanding of what went wrong when something fails. When adding new functionality, please make sure to add proper error handling. [Read more about error handling here](#error-handling).
 
 ### Tests
+
 If you add new functionality or modify existing functionality, please write tests thats properly cover the new functionality. You can run tests locally by running `cargo test` from the root directory. You must always run tests before opening a pull request.
 
 ### Code style
-Please follow the default rust styling guide when writing code for the base SDK. [Read more about rust code style here](https://doc.rust-lang.org/nightly/style-guide/#the-default-rust-style).
 
+Please follow the default rust styling guide when writing code for the base SDK. [Read more about rust code style here](https://doc.rust-lang.org/nightly/style-guide/#the-default-rust-style).
 
 ## Prerequisites for contributing
 
 ### Understanding the terms
 
 In the guide we use some terms that might be unfamiliar to you. Here's a quick explanation of the terms we use:
-- **Base SDK**: The base SDK is the SDK that all other SDK's are built on top of. The base SDK is written in Rust, and is responsible for executing commands and parsing the input and output to and from JSON.
-- **Commands**: Commands are what's being sent from the target language to the command handler. The command handler uses the command to execute the corresponding function in the base SDK. Commands are in reality just a JSON string that tells the command handler what function to execute, and what input to use.
-- **Command handler**: The command handler is the part of the base SDK that takes care of executing commands. It also takes care of parsing the input and output to and from JSON.
-- **Target language**: The target language refers to the actual SDK code. For example, the [Node.js SDK](https://www.npmjs.com/package/@infisical/sdk) is a "target language", and so is the [Python SDK](https://pypi.org/project/infisical-python/).
 
+* **Base SDK**: The base SDK is the SDK that all other SDK's are built on top of. The base SDK is written in Rust, and is responsible for executing commands and parsing the input and output to and from JSON.
+
+* **Commands**: Commands are what's being sent from the target language to the command handler. The command handler uses the command to execute the corresponding function in the base SDK. Commands are in reality just a JSON string that tells the command handler what function to execute, and what input to use.
+
+* **Command handler**: The command handler is the part of the base SDK that takes care of executing commands. It also takes care of parsing the input and output to and from JSON.
+
+* **Target language**: The target language refers to the actual SDK code. For example, the [Node.js SDK](https://www.npmjs.com/package/@infisical/sdk) is a "target language", and so is the [Python SDK](https://pypi.org/project/infisical-python/).
 
 ### Understanding the execution flow
+
 After the target language SDK is initiated, it uses language-specific bindings to interact with the base SDK.
 These bindings are instantiated, setting up the interface for command execution. A client within the command handler is created, which issues commands to the base SDK.
 When a command is executed, it is first validated. If valid, the command handler locates the corresponding command to perform. If the command executes successfully, the command handler returns the output to the target language SDK, where it is parsed and returned to the user.
 If the command handler fails to validate the input, an error will be returned to the target language SDK.
 
-
 <Frame caption="Execution flow diagram for the SDK from the target language to the base SDK. The execution flow is the same for all target languages.">
   <img height="640" width="520" src="/images/sdk-flow.png" />
 </Frame>
 
-
-
 ### Rust knowledge
 
-Contributing to the SDK requires intermediate to advanced knowledge of Rust concepts such as lifetimes, traits, generics, and async/await _(futures)_, and more.
+Contributing to the SDK requires intermediate to advanced knowledge of Rust concepts such as lifetimes, traits, generics, and async/await *(futures)*, and more.
 
 ### Rust setup
+
 The base SDK is written in rust. Therefore you must have rustc and cargo installed. You can install rustc and cargo by following the instructions [here](https://www.rust-lang.org/tools/install).
 
 You shouldn't have to use the rust cross compilation toolchain, as all compilation is done through a collection of Github Actions. However. If you need to test cross compilation, please do so with Github Actions.
 
 ### Tests
+
 If you add new functionality or modify existing functionality, please write tests thats properly cover the new functionality. You can run tests locally by running `cargo test` from the root directory.
 
 ### Language-specific crates
+
 The language-specific crates should ideally never have to be modified, as they are simply a wrapper for the `infisical-json` crate, which executes "commands" from the base SDK. If you need to create a new target-language specific crate, please try to create native bindings for the target language. Some languages don't have direct support for native bindings (Java as an example). In those cases we can use the C bindings (`crates/infisical-c`) in the target language.
 
-
-
-
 ## Generate types
+
 Having almost seemless type safety from the base SDK to the target language is critical, as writing types for each language has a lot of drawbacks such as duplicated code, and lots of overhead trying to keep the types up-to-date and in sync across a large collection of languages. Therefore we decided to use [QuickType](https://quicktype.io/) and [Serde](https://serde.rs/) to help us generate types for each language. In our Rust base SDK (`crates/infisical`), we define all the inputs/outputs.
 
 If you are interested in reading about QuickType works under the hood, you can [read more here](http://blog.quicktype.io/under-the-hood/).
 
 This is an example of a type defined in Rust (both input and output). For this to become a generated type, you'll need to add it to our schema generator. More on that further down.
+
 ```rust
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -129,13 +138,13 @@ pub struct CreateSecretOptions {
 pub struct CreateSecretResponse {
   pub secret: Secret, // "Secret" is defined elsewhere.
 }
-````
+```
 
 ### Adding input types to the schema generator
 
-You will _only_ have to define outputs in our schema generator, then QuickType will take care of the rest behind the scenes. You can find the Rust crate that takes care of type generation here: `crates/sdk-schemas/src/main.rs`.
+You will *only* have to define outputs in our schema generator, then QuickType will take care of the rest behind the scenes. You can find the Rust crate that takes care of type generation here: `crates/sdk-schemas/src/main.rs`.
 
-Simply add the output _(also called response)_, to the `write_schema_for_response!` macro. This will let QuickType know that it should generate types for the given structs. The main function will look something like this:
+Simply add the output *(also called response)*, to the `write_schema_for_response!` macro. This will let QuickType know that it should generate types for the given structs. The main function will look something like this:
 
 ```rust
 fn main() -> Result<()> {
@@ -185,9 +194,11 @@ writeToFile("./languages/node/src/infisical_client/schemas.ts", ts.lines);
 ```
 
 ## Building bindings
+
 We've tried to streamline the building process as much as possible. So you shouldn't have to worry much about building bindings, as it should just be a few commands.
 
 ### Node.js
+
 Building bindings for Node.js is very straight foward. The command below will generate NAPI bindings for Node.js, and move the bindings to the correct folder. We use [NAPI-RS](https://napi.rs/) to generate the bindings.
 
 ```console
@@ -196,6 +207,7 @@ $ npm run build
 ```
 
 ### Python
+
 To generate and use python bindings you will need to run the following commands.
 The Python SDK is located inside the crates folder. This is a limitation of the maturin tool, forcing us to structure the project in this way.
 
@@ -208,10 +220,11 @@ $ maturin develop
 ```
 
 <Warning>
-    After running the commands above, it's very important that you rename the generated .so file to `infisical_py.so`. After renaming it you also need to move it into the root of the `crates/infisical-py` folder.
+  After running the commands above, it's very important that you rename the generated .so file to `infisical_py.so`. After renaming it you also need to move it into the root of the `crates/infisical-py` folder.
 </Warning>
 
 ### Java
+
 Java uses the C bindings to interact with the base SDK. To build and use the C bindings in Java, please follow the instructions below.
 
 ```console
@@ -219,9 +232,10 @@ $ cd crates/infisical-c
 $ cargo build --release
 $ cd ../../languages/java
 ```
+
 <Warning>
-    After generating the C bindings, the generated .so or .dll has been created in the `/target` directory at the root of the project.
-    You have to manually move the generated file into the `languages/java/src/main/resources` directory.
+  After generating the C bindings, the generated .so or .dll has been created in the `/target` directory at the root of the project.
+  You have to manually move the generated file into the `languages/java/src/main/resources` directory.
 </Warning>
 
 ## Error handling
